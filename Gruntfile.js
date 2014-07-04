@@ -23,7 +23,8 @@ module.exports = function(grunt) {
     jshint: {
       all: [
         "Gruntfile.js",
-        "tasks/*.js"
+        "tasks/*.js",
+        "lib/*.js"
       ],
       options: {
         jshintrc: ".jshintrc",
@@ -42,6 +43,18 @@ module.exports = function(grunt) {
             "test/fixtures/errorFile1.ts",
             "test/fixtures/errorFile2.ts"
         ]}
+      },
+      output: {
+        options: {
+          configuration: grunt.file.readJSON("tslint.json"),
+          outputFile: 'tmp/test.txt'
+        },
+        files: {
+          src: [
+            "test/fixtures/correctFile.ts",
+            "test/fixtures/errorFile1.ts",
+            "test/fixtures/errorFile2.ts"
+          ]}
       }
     }
 

@@ -27,7 +27,10 @@
     "test": "grunt test"
   },
   "dependencies": {
-    "tslint": "0.4.11"
+    "es6-promises": "~1.0.8",
+    "manticore": "0.0.1",
+    "mkdirp": "~0.5.0",
+    "tslint": "~0.4.11"
   },
   "devDependencies": {
     "grunt-contrib-jshint": "~0.6.0",

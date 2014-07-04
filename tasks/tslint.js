@@ -12,15 +12,16 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 "use strict";
 
-module.exports = function(grunt) {
+module.exports = function (grunt) {
 
-  var Linter = require("tslint");
+  var mc = require("manticore");
+  var Promise = global.Promise || require("es6-promises");
 
-  grunt.registerMultiTask("tslint", "A linter for TypeScript.", function() {
+  grunt.registerMultiTask("tslint", "A linter for TypeScript.", function () {
     var options = this.options({
       formatter: "prose",
       outputFile: null
@@ -28,57 +29,37 @@ module.exports = function(grunt) {
     var done = this.async();
     var failed = 0;
 
-    // Iterate over all specified file groups, async for 'streaming' output on large projects
-    grunt.util.async.reduce(this.filesSrc, true, function(success, filepath, callback) {
-      if (!grunt.file.exists(filepath)) {
-        grunt.log.warn('Source file "' + filepath + '" not found.');
+    var pool = mc.createPool({
+      modulePath: require.resolve('../lib/worker'),
+      concurrent: require('os').cpus().length
+    });
+
+    Promise.all(this.filesSrc.map(function (filepath) {
+      return pool.run('lint', {
+        filepath: filepath,
+        options: options
+      }).then(function(res) {
+        if (res) {
+          failed += res.failureCount;
+          if (res.output && !options.outputFile) {
+            grunt.log.error(res.output);
+          }
+        }
+        return res;
+      });
+    })).then(function (results) {
+      if (failed > 0) {
+        grunt.log.error(failed + " " + grunt.util.pluralize(failed, "error/errors") + " in " +
+            this.filesSrc.length + " " + grunt.util.pluralize(this.filesSrc.length, "file/files"));
+        done(false);
       } else {
-        var contents = grunt.file.read(filepath);
-        var linter = new Linter(filepath, contents, options);
-
-        var result = linter.lint();
-
-        if(result.failureCount > 0) {
-          var outputString = "";
-          var outputFile = options.outputFile;
-
-          failed += result.failureCount;
-
-          if (outputFile != null) {
-            outputString = grunt.file.read(outputFile);
-          }
-          result.output.split("\n").forEach(function(line) {
-            if(line !== "") {
-              if (outputFile != null) {
-                outputString += line + "\n";
-              } else {
-                grunt.log.error(line);
-              }
-            }
-          });
-          if(outputFile != null) {
-            grunt.file.write(outputFile, outputString);
-          }
-          success = false;
-        }
+        grunt.log.ok(this.filesSrc.length + " " + grunt.util.pluralize(this.filesSrc.length, "file/files") + " lint free.");
+        done();
       }
-      // Using setTimout as process.nextTick() doesn't flush
-      setTimeout(function() {
-        callback(null, success);
-      }, 1);
-
-    }, function(err, success) {
-        if (err) {
-            done(err);
-        } else if (!success) {
-            grunt.log.error(failed + " " + grunt.util.pluralize(failed,"error/errors") + " in " +
-                            this.filesSrc.length + " " + grunt.util.pluralize(this.filesSrc.length,"file/files"));
-            done(false);
-        } else {
-            grunt.log.ok(this.filesSrc.length + " " + grunt.util.pluralize(this.filesSrc.length,"file/files") + " lint free.");
-            done();
-        }
-    }.bind(this));
+    }.bind(this), function (err) {
+      grunt.log.error(err.stack);
+      done(false);
+    });
   });
 
 };
