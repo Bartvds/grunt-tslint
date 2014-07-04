@@ -66,8 +66,9 @@ module.exports = function(grunt) {
   // These plugins provide necessary tasks.
   grunt.loadNpmTasks("grunt-contrib-jshint");
   grunt.loadNpmTasks("grunt-contrib-clean");
+  grunt.loadNpmTasks("grunt-continue");
 
-  grunt.registerTask("test", ["tslint"]);
+  grunt.registerTask("test", ["continueOn", "tslint", "continueOff"]);
 
   // By default, lint and run all tests.
   grunt.registerTask("default", ["jshint", "test"]);
