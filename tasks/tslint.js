@@ -30,7 +30,7 @@ module.exports = function (grunt) {
     var failed = 0;
 
     var pool = mc.createPool({
-      modulePath: require.resolve('../lib/worker'),
+      worker: require.resolve('../lib/worker'),
       concurrent: require('os').cpus().length
     });
 
